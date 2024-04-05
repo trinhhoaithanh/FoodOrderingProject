@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model categories {
+  category_id   Int     @id
+  category_name String  @db.VarChar(255)
+  items         items[]
+}
+
+model customers {
+  customer_id    Int        @id
+  customer_name  String     @db.VarChar(255)
+  customer_email String     @unique(map: "customer_email") @db.VarChar(255)
+  orders         orders[]
+  vouchers       vouchers[]
+}
+
+model fees {
+  fee_id     Int     @id
+  fee_name   String? @db.VarChar(255)
+  fee_amount Float?  @db.Float
+  order_id   Int?
+  orders     orders? @relation(fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction, map: "fees_ibfk_1")
+
+  @@index([order_id], map: "order_id")
+}
+
+model items {
+  item_id     Int          @id
+  item_name   String       @db.VarChar(255)
+  category_id Int?
+  item_price  Float        @db.Float
+  categories  categories?  @relation(fields: [category_id], references: [category_id], onDelete: NoAction, onUpdate: NoAction, map: "items_ibfk_1")
+  options     options[]
+  orderitems  orderitems[]
+
+  @@index([category_id], map: "category_id")
+}
+
+model options {
+  option_id    Int    @id
+  option_name  String @db.VarChar(255)
+  option_price Float  @db.Float
+  item_id      Int?
+  items        items? @relation(fields: [item_id], references: [item_id], onDelete: NoAction, onUpdate: NoAction, map: "options_ibfk_1")
+
+  @@index([item_id], map: "item_id")
+}
+
+model orderitems {
+  order_item_id       Int     @id
+  order_id            Int?
+  item_id             Int?
+  order_item_quantity Int
+  order_item_price    Float   @db.Float
+  orders              orders? @relation(fields: [order_id], references: [order_id], onDelete: NoAction, onUpdate: NoAction, map: "orderitems_ibfk_1")
+  items               items?  @relation(fields: [item_id], references: [item_id], onDelete: NoAction, onUpdate: NoAction, map: "orderitems_ibfk_2")
+
+  @@index([item_id], map: "item_id")
+  @@index([order_id], map: "order_id")
+}
+
+model orders {
+  order_id                Int          @id
+  customer_id             Int?
+  order_status            String       @db.VarChar(255)
+  estimated_delivery_time DateTime?    @db.Timestamp(0)
+  fees                    fees[]
+  orderitems              orderitems[]
+  customers               customers?   @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "orders_ibfk_1")
+
+  @@index([customer_id], map: "customer_id")
+}
+
+model vouchers {
+  voucher_id          Int        @id
+  customer_id         Int?
+  discount_percentage Float?     @db.Float
+  customers           customers? @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "vouchers_ibfk_1")
+
+  @@index([customer_id], map: "customer_id")
+}
