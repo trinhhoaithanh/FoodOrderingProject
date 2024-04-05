@@ -1,26 +1,31 @@
-import { Injectable } from '@nestjs/common';
-import { CreateItemDto } from './dto/create-item.dto';
-import { UpdateItemDto } from './dto/update-item.dto';
+import { HttpException, Injectable, NotFoundException } from '@nestjs/common';
+import {  PrismaClient } from '@prisma/client';
+import { responseObject } from 'util/response-template';
 
 @Injectable()
 export class ItemsService {
-  create(createItemDto: CreateItemDto) {
-    return 'This action adds a new item';
+  prisma = new PrismaClient();
+  async getItemDetail(item_id:number){
+    try {
+      let checkItem = await this.prisma.items.findUnique({
+        where:{
+           
+              item_id:  Number(item_id)
+      
+        }
+      })
+
+      if (checkItem) {
+        return responseObject(200, 'Get Items by id successfully!', checkItem); 
+      }
+      else {
+        throw new NotFoundException(responseObject(404, "Request is invalid", "Item is not found!")); 
+      }
+    }
+    catch (err) {
+      throw new HttpException(err.response, err.status);
+    }
   }
 
-  findAll() {
-    return `This action returns all items`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} item`;
-  }
-
-  update(id: number, updateItemDto: UpdateItemDto) {
-    return `This action updates a #${id} item`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} item`;
-  }
+  
 }
