@@ -8,13 +8,13 @@ datasource db {
 }
 
 model categories {
-  category_id   Int     @id
+  category_id   Int     @id @default(autoincrement())
   category_name String  @db.VarChar(255)
   items         items[]
 }
 
 model customers {
-  customer_id    Int        @id
+  customer_id    Int        @id @default(autoincrement())
   customer_name  String     @db.VarChar(255)
   customer_email String     @unique(map: "customer_email") @db.VarChar(255)
   orders         orders[]
@@ -22,7 +22,7 @@ model customers {
 }
 
 model fees {
-  fee_id     Int     @id
+  fee_id     Int     @id @default(autoincrement())
   fee_name   String? @db.VarChar(255)
   fee_amount Float?  @db.Float
   order_id   Int?
@@ -32,7 +32,7 @@ model fees {
 }
 
 model items {
-  item_id     Int          @id
+  item_id     Int          @id @default(autoincrement())
   item_name   String       @db.VarChar(255)
   category_id Int?
   item_price  Float        @db.Float
@@ -44,7 +44,7 @@ model items {
 }
 
 model options {
-  option_id    Int    @id
+  option_id    Int    @id @default(autoincrement())
   option_name  String @db.VarChar(255)
   option_price Float  @db.Float
   item_id      Int?
@@ -54,7 +54,7 @@ model options {
 }
 
 model orderitems {
-  order_item_id       Int     @id
+  order_item_id       Int     @id @default(autoincrement())
   order_id            Int?
   item_id             Int?
   order_item_quantity Int
@@ -67,10 +67,11 @@ model orderitems {
 }
 
 model orders {
-  order_id                Int          @id
+  order_id                Int          @id @default(autoincrement())
   customer_id             Int?
   order_status            String       @db.VarChar(255)
   estimated_delivery_time DateTime?    @db.Timestamp(0)
+  order_price             Int?
   fees                    fees[]
   orderitems              orderitems[]
   customers               customers?   @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "orders_ibfk_1")
@@ -79,7 +80,7 @@ model orders {
 }
 
 model vouchers {
-  voucher_id          Int        @id
+  voucher_id          Int        @id @default(autoincrement())
   customer_id         Int?
   discount_percentage Float?     @db.Float
   customers           customers? @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction, map: "vouchers_ibfk_1")

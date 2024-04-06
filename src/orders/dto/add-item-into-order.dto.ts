@@ -1,5 +1,4 @@
 export class AddItemToOrderDto {
-    itemId: number;
-    orderId: number;
+    item_id: number;
     quantity: number;
   }

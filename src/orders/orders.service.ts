@@ -9,31 +9,6 @@ import { connect } from 'http2';
 export class OrdersService {
   prisma = new PrismaClient();
 
-//   async addItemToOrder(
-//     order_id: number,
-//     createOrderItemDto: CreateOrderItemDto,
-//   ): Promise<any> {
-//     const { item_id, order_item_quantity } = createOrderItemDto;
-
-//     let item = await this.prisma.items.findUnique({
-//       where: {
-//         item_id: item_id,
-//       },
-//     });
-
-//     let order = await this.prisma.orders.findUnique({
-//       where: {
-//         order_id: order_id,
-//       },
-//     });
-
-//     if (!item || !order) {
-//       throw new Error('Item or order not found');
-//     }
-
-//     await this.prisma.orderitems.create({
-//     });
-//   }
 
     async getFeeByOrderId(order_id: number){
         try {
@@ -55,92 +30,112 @@ export class OrdersService {
     
     }
 
-    // async applyVoucher(order_id:number, applyVoucherDto:ApplyVoucherDto){
-    //   const {voucher_id} = applyVoucherDto;
-
-    //   const order = await this.prisma.orders.findUnique({
-    //     where:{
-    //       order_id
-    //     }
-    //   });
-
-    //   // Check if the order exists
-    //   if(!order){
-    //     throw new Error('Order not found');
-    //   }
-
-    //   // Check if the customer has the voucher
-    //   const voucher = await this.prisma.vouchers.findUnique({
-    //     where:{
-    //       voucher_id
-    //     },
-    //     include:{
-    //       customers:true
-    //     }
-    //   })
-
-    //   if(!voucher || voucher.customers.customer_id != order.customer_id){
-    //     throw new Error('Voucher not found or not associated with the customer');
-    //   }
-
-    //   await this.prisma.orders.update({
-    //     where:{
-    //       order_id:Number(order_id)
-    //     },
-    //     data:{
-        
-    //     }
-    //   })
-
-
-    // }
-
-  //     async addItemToOrder(
-  //       item,
-  //   order_id: number
     
-  // ) {
-  //   let {item_id, quantity} = item;
-  //   let order = await this.prisma.orders.findUnique({
-  //     where: {
-  //       order_id,
-  //     },
-  //   });
 
-  //   if (order) {
-  //     let item = await this.prisma.items.findUnique({
-  //       where: {
-  //         item_id,
-  //       },
-  //     });
+  async addItemToOrder(orderId: number, itemId: number, quantity: number): Promise<any> {
+    let order = await this.prisma.orders.findUnique({
+      where:{
+        order_id: Number(orderId)
+      }
+    })
+    if(order){
+      let item = await this.prisma.items.findUnique({
+        where:{
+          item_id:Number(itemId)
+        }
+      })
 
-  //     if (item) {
-  //       let newData = {
-  //           order_id:Number(order_id),
+      if(item){
+        let addedItem = await this.prisma.orderitems.create({
+          data: {
+            order_id: orderId,
+            item_id: itemId,
+            order_item_quantity: quantity,
+            order_item_price: item.item_price * quantity,
+          },
+        });
+        console.log(addedItem);
 
-  //           item_id: Number(item_id),
+        return responseObject(201, "add item into order successfully!", addedItem);
+      }
+      else{
+        throw new NotFoundException(responseObject(404, 'Request is invalid', "item not found!")); 
+      }
+    }
+    else{
+      throw new NotFoundException(responseObject(404, 'Request is invalid', "Order not found!")); 
+    }
+}
 
-  //           order_item_quantity: Number(quantity),
 
-  //           order_item_price:
-  //             (
-  //               await this.prisma.items.findUnique({
-  //                 where: { item_id },
-  //               })
-  //             ).item_price * quantity
-  //         }
-  //       return this.prisma.orderitems.create({
-  //         data: newData
-  //       });
-  //     } else {
-  //       throw new NotFoundException(
-  //         responseObject(404, 'Request is invalid', 'Item is not found!'),
-  //       );
-  //     }
-  //   } else {
-  //     throw new NotFoundException(
-  //       responseObject(404, 'Request is invalid', 'Order is not found!'),
-  //     );
-  //   }
-  // }
+  async deleteItemInOrder(order_id:number, item_id:number){
+    let order = await this.prisma.orders.findUnique({
+      where:{
+        order_id: Number(order_id)
+      }
+    })
+    if(order){
+      let item = await this.prisma.items.findUnique({
+        where:{
+          item_id:Number(item_id)
+        }
+      })
+
+      if(item){
+        await this.prisma.orderitems.deleteMany({
+          where:{
+            order_id,
+            item_id
+          }
+        })
+
+        return responseObject(201, "delete item successfully!");
+      }
+      else{
+        throw new NotFoundException(responseObject(404, 'Request is invalid', "item not found!")); 
+      }
+    }
+    else{
+      throw new NotFoundException(responseObject(404, 'Request is invalid', "Order not found!")); 
+    }
+  }
+
+  //apply voucher
+  async applyVoucherToOrder(order_id: number, voucher_id: number) {
+    let order = await this.prisma.orders.findUnique({
+      where:{
+        order_id
+      }
+    })
+
+    if(order){
+      let voucher = await this.prisma.vouchers.findUnique({
+        where:{
+          voucher_id
+        }
+      })
+
+      if(voucher){
+        const discount = order.order_price * voucher.discount_percentage/100;
+        
+        const newTotalPrice = order.order_price - discount;
+
+      
+      
+        let newPrice = await this.prisma.orders.update({
+          where: { order_id: Number(order_id) },
+          data: { 
+
+            order_price: newTotalPrice },
+        });
+        return responseObject(200, "Update order price successfully!", newPrice);
+      }
+      else{
+        throw new NotFoundException(responseObject(404, 'Request is invalid', "Voucher not found!")); 
+      }
+    }
+    else{
+      throw new NotFoundException(responseObject(404, 'Request is invalid', "Order not found!")); 
+    }
+  }
 }
